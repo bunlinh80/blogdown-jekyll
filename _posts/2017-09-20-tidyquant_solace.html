@@ -1,0 +1,546 @@
+---
+title: 'Tidyquant Solace: Replication'
+author: Linh Bun
+date: '2017-09-20'
+slug: tidyquant_solace
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+output:
+  html_document:
+    toc: yes
+---
+
+
+
+<section id="tidyquant-of-solace" class="level1">
+<h1>Tidyquant of Solace</h1>
+<pre class="r"><code># *** --------------------------------------------------------------------------*** #
+## Step 0: Load Libraries ##
+# *** --------------------------------------------------------------------------*** #
+suppressMessages(library(&quot;tidyverse&quot;))
+suppressMessages(library(&quot;tidyquant&quot;))
+suppressMessages(library(&quot;scales&quot;))
+suppressMessages(library(&quot;ggbeeswarm&quot;))
+suppressMessages(library(&quot;hrbrthemes&quot;))
+suppressMessages(library(&quot;ggthemes&quot;))</code></pre>
+<pre class="r"><code># *** --------------------------------------------------------------------------*** #
+## Step 1: Prepare for data  ##
+# *** --------------------------------------------------------------------------*** #
+# Get HVS data
+# First, list the Mnemonics from FRED
+tickers &lt;- c(&quot;ETOTALUSQ176N&quot;,    # All housing units
+             &quot;EVACANTUSQ176N&quot;,   # Vacant
+             &quot;EYRVACUSQ176N&quot;,    # Year-round vacant
+             &quot;ERENTUSQ176N&quot;,     # Vacant for rent
+             &quot;ESALEUSQ176N&quot;,     # Vacant for sale
+             &quot;ERNTSLDUSQ176N&quot;,   # Vacant rented or sold
+             &quot;EOFFMARUSQ176N&quot;,   # Vacant held off market
+             &quot;EOCCUSEUSQ176N&quot;,   # Vacant occasional use
+             &quot;EUREUSQ176N&quot;,      # Vacant usual residence elsewhere
+             &quot;EOTHUSQ176N&quot;,      # Vacant other
+             &quot;ESEASONUSQ176N&quot;,   # Vacant seasonal
+             &quot;EOCCUSQ176N&quot;,      # Occupied
+             &quot;EOWNOCCUSQ176N&quot;,   # Owner occupied
+             &quot;ERNTOCCUSQ176N&quot;,   # Renter occupied
+             &quot;RRVRUSQ156N&quot;,      # Rental vacancy rate
+             &quot;RHVRUSQ156N&quot;       # Homeowner vacancy rate
+)
+
+# Next, list human readable variable names
+myvars &lt;- c(&quot;All housing units&quot;,
+            &quot;Vacant&quot;,
+            &quot;Year-round vacant&quot;,
+            &quot;Vacant for rent&quot;,
+            &quot;Vacant for sale&quot;,
+            &quot;Vacant rented or sold&quot;,
+            &quot;Vacant held off market&quot;,
+            &quot;Vacant occasional use&quot;,
+            &quot;Vacant usual residence elsewhere&quot;,
+            &quot;Vacant other&quot;,
+            &quot;Vacant seasonal&quot;,
+            &quot;Occupied&quot;,
+            &quot;Owner occupied&quot;,
+            &quot;Renter occupied&quot;,
+            &quot;Rental vacancy rate&quot;,
+            &quot;Homeowner vacancy rate&quot;
+)</code></pre>
+<pre class="r"><code># Create a lookup dataset
+mylookup &lt;- data.frame(symbol = tickers, var = myvars)
+knitr::kable(mylookup)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">symbol</th>
+<th style="text-align: left;">var</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">All housing units</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EVACANTUSQ176N</td>
+<td style="text-align: left;">Vacant</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EYRVACUSQ176N</td>
+<td style="text-align: left;">Year-round vacant</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ERENTUSQ176N</td>
+<td style="text-align: left;">Vacant for rent</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ESALEUSQ176N</td>
+<td style="text-align: left;">Vacant for sale</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ERNTSLDUSQ176N</td>
+<td style="text-align: left;">Vacant rented or sold</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EOFFMARUSQ176N</td>
+<td style="text-align: left;">Vacant held off market</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EOCCUSEUSQ176N</td>
+<td style="text-align: left;">Vacant occasional use</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EUREUSQ176N</td>
+<td style="text-align: left;">Vacant usual residence elsewhere</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EOTHUSQ176N</td>
+<td style="text-align: left;">Vacant other</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ESEASONUSQ176N</td>
+<td style="text-align: left;">Vacant seasonal</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EOCCUSQ176N</td>
+<td style="text-align: left;">Occupied</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EOWNOCCUSQ176N</td>
+<td style="text-align: left;">Owner occupied</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ERNTOCCUSQ176N</td>
+<td style="text-align: left;">Renter occupied</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RRVRUSQ156N</td>
+<td style="text-align: left;">Rental vacancy rate</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RHVRUSQ156N</td>
+<td style="text-align: left;">Homeowner vacancy rate</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code># *** --------------------------------------------------------------------------*** #
+## Step 2: Pull data  ##
+# *** --------------------------------------------------------------------------*** #
+
+tickers %&gt;% tq_get(get = &quot;economic.data&quot;, 
+                   from = &quot;2001-04-01&quot;   # we start from April 2001 due to break in HVS
+) -&gt; df
+# Take a look:
+knitr::kable(head(df))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">symbol</th>
+<th style="text-align: left;">date</th>
+<th style="text-align: right;">price</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2001-04-01</td>
+<td style="text-align: right;">117786</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2001-07-01</td>
+<td style="text-align: right;">118216</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2001-10-01</td>
+<td style="text-align: right;">118635</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2002-01-01</td>
+<td style="text-align: right;">119061</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2002-04-01</td>
+<td style="text-align: right;">119483</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2002-07-01</td>
+<td style="text-align: right;">119909</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code># *** --------------------------------------------------------------------------*** #
+## Step 3: Organize data  ##
+# *** --------------------------------------------------------------------------*** #
+
+df &lt;- merge(df, mylookup, by = &quot;symbol&quot;) %&gt;% rename(value = price)
+df %&gt;% group_by(date) %&gt;% 
+  # create a share variable that is the ratio of units to All housing units
+  mutate(share = value/value[var == &quot;All housing units&quot;])  %&gt;% 
+  ungroup() %&gt;% arrange(date, -value) -&gt; df
+knitr::kable(tail(df, 16))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">symbol</th>
+<th style="text-align: left;">date</th>
+<th style="text-align: right;">value</th>
+<th style="text-align: left;">var</th>
+<th style="text-align: right;">share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">ETOTALUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">136684.0</td>
+<td style="text-align: left;">All housing units</td>
+<td style="text-align: right;">1.0000000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EOCCUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">119085.0</td>
+<td style="text-align: left;">Occupied</td>
+<td style="text-align: right;">0.8712432</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EOWNOCCUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">76146.0</td>
+<td style="text-align: left;">Owner occupied</td>
+<td style="text-align: right;">0.5570952</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ERNTOCCUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">42939.0</td>
+<td style="text-align: left;">Renter occupied</td>
+<td style="text-align: right;">0.3141480</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EVACANTUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">17599.0</td>
+<td style="text-align: left;">Vacant</td>
+<td style="text-align: right;">0.1287568</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EYRVACUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">13580.0</td>
+<td style="text-align: left;">Year-round vacant</td>
+<td style="text-align: right;">0.0993533</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EOFFMARUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">7401.0</td>
+<td style="text-align: left;">Vacant held off market</td>
+<td style="text-align: right;">0.0541468</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ESEASONUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">4020.0</td>
+<td style="text-align: left;">Vacant seasonal</td>
+<td style="text-align: right;">0.0294109</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EOTHUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">3944.0</td>
+<td style="text-align: left;">Vacant other</td>
+<td style="text-align: right;">0.0288549</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ERENTUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">3551.0</td>
+<td style="text-align: left;">Vacant for rent</td>
+<td style="text-align: right;">0.0259796</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">EOCCUSEUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">2231.0</td>
+<td style="text-align: left;">Vacant occasional use</td>
+<td style="text-align: right;">0.0163223</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ERNTSLDUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">1379.0</td>
+<td style="text-align: left;">Vacant rented or sold</td>
+<td style="text-align: right;">0.0100890</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ESALEUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">1248.0</td>
+<td style="text-align: left;">Vacant for sale</td>
+<td style="text-align: right;">0.0091305</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">EUREUSQ176N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">1226.0</td>
+<td style="text-align: left;">Vacant usual residence elsewhere</td>
+<td style="text-align: right;">0.0089696</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RRVRUSQ156N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">7.5</td>
+<td style="text-align: left;">Rental vacancy rate</td>
+<td style="text-align: right;">0.0000549</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">RHVRUSQ156N</td>
+<td style="text-align: left;">2017-07-01</td>
+<td style="text-align: right;">1.6</td>
+<td style="text-align: left;">Homeowner vacancy rate</td>
+<td style="text-align: right;">0.0000117</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code># Make a caption:
+mycaption &lt;- &quot;@lenkiefer Source: U.S. Bureau of the Census, Housing Inventory Estimate, retrieved from FRED, Federal Reserve Bank of St. Louis; https://fred.stlouisfed.org/series/EOFFMARUSQ176N, September 18, 2017.&quot;
+# Wrap caption 90 characters:
+mycaption &lt;- paste0(strwrap(mycaption, 90), sep = &quot;&quot;, collapse=&quot;\n&quot;)</code></pre>
+<pre class="r"><code># Make plot
+ggplot(data = 
+         # We&#39;re only going to plot 3 series
+         filter(df, var %in% c(&#39;Vacant for rent&#39;, 
+                               &quot;Vacant rented or sold&quot;, 
+                               &#39;Vacant for sale&#39;, 
+                               &#39;Vacant held off market&#39;)), 
+       aes(x = date, y = share, label = var)) +
+  # Plot the gray lines
+  geom_path(data = filter(df, var %in% c(&#39;Vacant for rent&#39;, 
+                                         &quot;Vacant rented or sold&quot;, 
+                                         &#39;Vacant for sale&#39;, 
+                                         &#39;Vacant held off market&#39;)) %&gt;%
+              #overwrite the var variable with NULL so each line shows up on each panel.
+              mutate(var = NULL),  
+            inherit.aes = F, color = &quot;darkgray&quot;,   # tell this plot to ignore the aes statement
+            alpha = 0.5,                        # make the lines faint
+            aes(x = date, y = share, group = symbol)) +
+  geom_line(size = 1, color = &quot;royalblue&quot;) + # draw the real plot
+  #  guides(color = F) +                        # ditch 
+  theme_minimal() +
+  facet_wrap(~ var) +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+  theme(plot.caption = element_text(hjust = 0), 
+        strip.text = element_text(color = &quot;royalblue&quot;) ) +
+  labs(x = &quot;&quot;, y = &quot;&quot;,
+       title = &quot;U.S. Housing Inventory: Year-round vacant units as share of total housing stock&quot;,
+       caption = mycaption)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-7-1.png" width="2100" /></p>
+<pre class="r"><code># Make plot
+ggplot(data = 
+         # We&#39;re only going to plot 3 series
+         filter(df, var %in% c(&#39;Vacant for rent&#39;, 
+                               &quot;Vacant rented or sold&quot;, 
+                               &#39;Vacant for sale&#39;, 
+                               &#39;Vacant held off market&#39;)), 
+       aes(x = date, y = share, label = var)) +
+  # Plot the gray lines
+  geom_path(data = filter(df, var %in% c(&#39;Vacant for rent&#39;, 
+                                         &quot;Vacant rented or sold&quot;, 
+                                         &#39;Vacant for sale&#39;, 
+                                         &#39;Vacant held off market&#39;)) %&gt;%
+              #overwrite the var variable with NULL so each line shows up on each panel.
+              mutate(var = NULL),  
+            inherit.aes = F, color = &quot;darkgray&quot;,   # tell this plot to ignore the aes statement
+            alpha = 0.5,                        # make the lines faint
+            aes(x = date, y = share, group = symbol)) +
+  geom_line(size = 1, color = &quot;orange&quot;) + # draw the real plot
+  #  guides(color = F) +                        # ditch 
+  theme_fivethirtyeight() +
+  facet_wrap(~ var) +
+  scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+  theme(plot.caption = element_text(hjust = 0), 
+        strip.text = element_text(color = &quot;blue&quot;) ) +
+  labs(x = &quot;&quot;, y = &quot;&quot;,
+       title = &quot;U.S. Housing Inventory: Year-round vacant units as share of total housing stock&quot;,
+       caption = mycaption)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-8-1.png" width="2100" /></p>
+<pre class="r"><code># New plot
+ggplot(data = 
+         # We&#39;re only going to plot 3 series
+         filter(df, var %in% c(&#39;Vacant for rent&#39;, 
+                              &quot;Vacant rented or sold&quot;, 
+                              &#39;Vacant for sale&#39;, 
+                              &#39;Vacant held off market&#39;)), 
+       aes(x = date, y = share, label = var)) +
+    # Plot the gray lines
+    geom_path(data = filter(df, var %in% c(&#39;Vacant for rent&#39;, 
+                                          &quot;Vacant rented or sold&quot;, 
+                                          &#39;Vacant for sale&#39;, 
+                                          &#39;Vacant held off market&#39;)) %&gt;%
+                #overwrite the var variable with NULL so each line shows up on each panel.
+                mutate(var = NULL),  
+              inherit.aes = F, color = &quot;white&quot;,   # tell this plot to ignore the aes statement
+              alpha = 0.5,                        # make the lines faint
+              aes(x = date, y = share, group = symbol)) +
+    geom_line(size = 1, color = &quot;royalblue&quot;) + # draw the real plot
+    #  guides(color = F) +                        # ditch 
+    # theme_minimal() +
+    facet_wrap(~var) +
+    scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+    theme(plot.caption = element_text(hjust = 0), 
+          strip.text = element_text(color = &quot;royalblue&quot;) ) +
+    labs(x = &quot;&quot;, y = &quot;&quot;,
+         title = &quot;U.S. Housing Inventory: Year-round vacant units as share of total housing stock&quot;, 
+         caption = mycaption) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-9-1.png" width="2100" /></p>
+<section id="alternative-for-plotting-with-background-all-data-following-plotting-background-data-for-groups-with-ggplot2" class="level2">
+<h2>Alternative for Plotting with Background (All Data) Following <a href="https://drsimonj.svbtle.com/plotting-background-data-for-groups-with-ggplot2">Plotting background data for groups with ggplot2</a></h2>
+<pre class="r"><code># working with background plot
+df2 &lt;- df %&gt;%
+    filter(var %in% c(&#39;Vacant for rent&#39;,
+                      &quot;Vacant rented or sold&quot;,
+                      &#39;Vacant for sale&#39;,
+                      &#39;Vacant held off market&#39;))
+df2_without_var &lt;- df %&gt;%
+    filter(var %in% c(&#39;Vacant for rent&#39;,
+                      &quot;Vacant rented or sold&quot;,
+                      &#39;Vacant for sale&#39;,
+                      &#39;Vacant held off market&#39;)) %&gt;%
+    # mutate(var_grey = var) %&gt;%
+    select(-var)
+# df2_var2 &lt;- df %&gt;%
+#     filter(var %in% c(&#39;Vacant for rent&#39;,
+#                       &quot;Vacant rented or sold&quot;,
+#                       &#39;Vacant for sale&#39;,
+#                       &#39;Vacant held off market&#39;)) %&gt;%
+#     mutate(var2 = var)</code></pre>
+<pre class="r"><code>ggplot(data = df2) +
+    # key change
+      # added var_grey (= var) for grouping
+        # no need to add new variable
+        # can just use symbol variable
+      # this helps distinguish the four variables (var)
+      # otherwise, geom_line() will use all points, creating zig-zag of all four line combined
+    geom_line(data = df2_without_var,
+              # mapping = aes(x = date, y = share, group = var_grey),
+              mapping = aes(x = date, y = share, group = symbol),
+              alpha = 0.7,
+              color = &quot;grey&quot;) +
+    geom_line(mapping = aes(x = date, y = share),
+              size = 1,
+              color = &quot;royalblue&quot;) +
+    facet_wrap(~ var) +
+    theme_minimal() +
+    scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+    theme(plot.caption = element_text(hjust = 0),
+          strip.text = element_text()) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Vacant Units as Share of Total Housing Stock&quot;,
+         title = &quot;U.S. Housing Inventory: Year-Round&quot;,
+         caption = mycaption)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+</section>
+<section id="increasing-dpi-higher-resolution" class="level2">
+<h2>Increasing DPI (Higher Resolution)</h2>
+<pre class="r"><code>ggplot(data = df2) +
+    # key change
+      # added var_grey (= var) for grouping
+        # no need to add new variable
+        # can just use symbol variable
+      # this helps distinguish the four variables (var)
+      # otherwise, geom_line() will use all points, creating zig-zag of all four line combined
+    geom_line(data = df2_without_var,
+              # mapping = aes(x = date, y = share, group = var_grey),
+              mapping = aes(x = date, y = share, group = symbol),
+              alpha = 0.7,
+              color = &quot;grey&quot;) +
+    geom_line(mapping = aes(x = date, y = share),
+              size = 1,
+              color = &quot;royalblue&quot;) +
+    facet_wrap(~ var) +
+    theme_minimal() +
+    scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+    theme(plot.caption = element_text(hjust = 0),
+          strip.text = element_text()) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Vacant Units as Share of Total Housing Stock&quot;,
+         title = &quot;U.S. Housing Inventory: Year-Round&quot;,
+         caption = mycaption)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-12-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = df2) +
+    # key change
+      # added var_grey (= var) for grouping
+        # no need to add new variable
+        # can just use symbol variable
+      # this helps distinguish the four variables (var)
+      # otherwise, geom_line() will use all points, creating zig-zag of all four line combined
+    geom_line(data = df2_without_var,
+              # mapping = aes(x = date, y = share, group = var_grey),
+              mapping = aes(x = date, y = share, group = symbol),
+              alpha = 0.7,
+              color = &quot;grey&quot;) +
+    geom_line(mapping = aes(x = date, y = share),
+              size = 1,
+              color = &quot;orange&quot;) +
+    facet_wrap(~ var) +
+    theme_fivethirtyeight() +
+    scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+    theme(plot.caption = element_text(hjust = 0),
+          strip.text = element_text()) +
+    labs(x = &quot;&quot;,
+         y = &quot;&quot;,
+         title = &quot;U.S. Housing Inventory: Year-round vacant units as share of total housing stock&quot;,
+         caption = mycaption)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-13-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = df2) +
+    # key change
+      # added var_grey (= var) for grouping
+        # no need to add new variable
+        # can just use symbol variable
+      # this helps distinguish the four variables (var)
+      # otherwise, geom_line() will use all points, creating zig-zag of all four line combined
+    geom_line(data = df2_without_var,
+              # mapping = aes(x = date, y = share, group = var_grey),
+              mapping = aes(x = date, y = share, group = symbol),
+              alpha = 0.5,
+              color = &quot;white&quot;) +
+    geom_line(mapping = aes(x = date, y = share),
+              size = 1,
+              color = &quot;royalblue&quot;) +
+    facet_wrap(~ var) +
+    theme_modern_rc(grid = &quot;XY&quot;) +
+    scale_y_continuous(labels = scales::percent, breaks = seq(0, 1, .01)) +
+    theme(plot.caption = element_text(hjust = 0),
+          strip.text = element_text()) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Vacant Units as Share of Total Housing Stock&quot;,
+         title = &quot;U.S. Housing Inventory: Year-Round&quot;,
+         caption = mycaption)</code></pre>
+<p><img src="/post/2017-09-20-tidyquant_solace_files/figure-html/unnamed-chunk-14-1.png" width="2100" /></p>
+</section>
+</section>

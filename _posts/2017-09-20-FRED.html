@@ -1,0 +1,470 @@
+---
+title: "FRED"
+author: "Linh Bun"
+date: '2017-09-20'
+categories: ["R"]
+tags: ["R Markdown", "plot", "regression"]
+output: 
+  html_document:
+    toc: TRUE
+abstract: This is an abstract for R Markdown on getting and accessing publicly available data from the Saint Louis Fed (FRED) database. It is one of an important macroeconomic dataset available publicly at free of charge.
+---
+
+
+
+<section id="r-markdown-setup" class="level1">
+<h1>R Markdown Setup</h1>
+<p><code>keep_md: TRUE</code> option is for keeping Markdown document used to generate HTML but Markdown is rendered better on GitHub. <code>number_sections: TRUE</code> option is used to number sections.</p>
+</section>
+<section id="accessing-fred-data" class="level1">
+<h1>Accessing FRED Data</h1>
+<p>So far, there seems to be several useful (although there are many more packages for working with St. Louis Fed FRED data):</p>
+<ul>
+<li><code>tidyquant</code></li>
+<li><code>quantmod</code></li>
+<li><code>alfred</code></li>
+</ul>
+<section id="tidyquant-package" class="level2">
+<h2><code>tidyquant</code> package</h2>
+<p>We could use <code>tidyquant::tq_get()</code> and for St. Louis Fed (FRED database), <code>tidyquant</code> uses a wrapper for <code>quantmod</code> package. The code for <strong>homeowner vacancy rate (quarterly)</strong> on FRED database is <code>&quot;RHVRUSQ156N&quot;</code>.</p>
+<pre class="r"><code>suppressMessages(library(&quot;tidyquant&quot;))
+# FRED code for Homeowner Vacancy Rate for the US: &quot;RHVRUSQ156N&quot;
+homeowner_vacancy_rate &lt;- &quot;RHVRUSQ156N&quot;
+housing &lt;- tq_get(homeowner_vacancy_rate, get = &quot;economic.data&quot;)
+housing</code></pre>
+<pre><code>## # A tibble: 43 x 2
+##    date       price
+##    &lt;date&gt;     &lt;dbl&gt;
+##  1 2007-01-01  2.80
+##  2 2007-04-01  2.60
+##  3 2007-07-01  2.70
+##  4 2007-10-01  2.80
+##  5 2008-01-01  2.90
+##  6 2008-04-01  2.80
+##  7 2008-07-01  2.80
+##  8 2008-10-01  2.90
+##  9 2009-01-01  2.70
+## 10 2009-04-01  2.50
+## # ... with 33 more rows</code></pre>
+<pre class="r"><code>housing</code></pre>
+<pre><code>## # A tibble: 43 x 2
+##    date       price
+##    &lt;date&gt;     &lt;dbl&gt;
+##  1 2007-01-01  2.80
+##  2 2007-04-01  2.60
+##  3 2007-07-01  2.70
+##  4 2007-10-01  2.80
+##  5 2008-01-01  2.90
+##  6 2008-04-01  2.80
+##  7 2008-07-01  2.80
+##  8 2008-10-01  2.90
+##  9 2009-01-01  2.70
+## 10 2009-04-01  2.50
+## # ... with 33 more rows</code></pre>
+<pre class="r"><code>str(housing)</code></pre>
+<pre><code>## Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    43 obs. of  2 variables:
+##  $ date : Date, format: &quot;2007-01-01&quot; &quot;2007-04-01&quot; ...
+##  $ price: num  2.8 2.6 2.7 2.8 2.9 2.8 2.8 2.9 2.7 2.5 ...</code></pre>
+<pre class="r"><code>head(housing)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   date       price
+##   &lt;date&gt;     &lt;dbl&gt;
+## 1 2007-01-01  2.80
+## 2 2007-04-01  2.60
+## 3 2007-07-01  2.70
+## 4 2007-10-01  2.80
+## 5 2008-01-01  2.90
+## 6 2008-04-01  2.80</code></pre>
+<pre class="r"><code>tail(housing)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   date       price
+##   &lt;date&gt;     &lt;dbl&gt;
+## 1 2016-04-01  1.70
+## 2 2016-07-01  1.80
+## 3 2016-10-01  1.80
+## 4 2017-01-01  1.70
+## 5 2017-04-01  1.50
+## 6 2017-07-01  1.60</code></pre>
+<section id="specifying-date-range" class="level3">
+<h3>specifying date range</h3>
+<pre class="r"><code>housing2 &lt;- tq_get(homeowner_vacancy_rate,
+                   get = &quot;economic.data&quot;,
+                   # from = &quot;1956-01-01&quot;,
+                   from = &quot;2001-01-01&quot;,
+                   to = &quot;2017-06-01&quot;)</code></pre>
+<pre class="r"><code>str(housing2)</code></pre>
+<pre><code>## Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    66 obs. of  2 variables:
+##  $ date : Date, format: &quot;2001-01-01&quot; &quot;2001-04-01&quot; ...
+##  $ price: num  1.5 1.8 1.9 1.8 1.7 1.7 1.7 1.7 1.7 1.7 ...</code></pre>
+<pre class="r"><code>head(housing2)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   date       price
+##   &lt;date&gt;     &lt;dbl&gt;
+## 1 2001-01-01  1.50
+## 2 2001-04-01  1.80
+## 3 2001-07-01  1.90
+## 4 2001-10-01  1.80
+## 5 2002-01-01  1.70
+## 6 2002-04-01  1.70</code></pre>
+<pre class="r"><code>tail(housing2)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   date       price
+##   &lt;date&gt;     &lt;dbl&gt;
+## 1 2016-01-01  1.70
+## 2 2016-04-01  1.70
+## 3 2016-07-01  1.80
+## 4 2016-10-01  1.80
+## 5 2017-01-01  1.70
+## 6 2017-04-01  1.50</code></pre>
+</section>
+<section id="plots" class="level3">
+<h3>plots</h3>
+<pre class="r"><code>suppressMessages(library(&quot;ggplot2&quot;))</code></pre>
+<pre class="r"><code>ggplot(data = housing,
+       mapping = aes(x = date, y = price)) +
+    geom_line(color = &quot;blue&quot;, size = 1)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/tq_plot-1.png" width="2100" /></p>
+<section id="add-scale-package" class="level4">
+<h4>add <code>scale</code> package</h4>
+<p><code>scale</code> package is added for <code>scale_x_date</code> labels.</p>
+<pre class="r"><code>suppressMessages(library(&quot;scales&quot;))
+suppressMessages(library(&quot;ggbeeswarm&quot;))
+suppressMessages(library(&quot;hrbrthemes&quot;))
+suppressMessages(library(&quot;tidyverse&quot;))</code></pre>
+<pre class="r"><code>ggplot(data = housing2) +
+    geom_line(mapping = aes(x = date, y = price), 
+              color = &quot;blue&quot;,
+              size = 0.6) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Percent&quot;,
+         title = &quot;Homeowner Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_ipsum_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/homeowner_plot-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = housing2) +
+    # y ==&gt; devide by 100
+      # scales::percent ==&gt; multiple things by 100
+    geom_line(mapping = aes(x = date, y = price/100), 
+              color = &quot;blue&quot;,
+              size = 0.6) +
+    # scale_y_continuous(labels = percent) +
+    scale_y_continuous(labels = scales::percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Homeowner Vacancy Rate&quot;,
+         title = &quot;Homeowner Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_ipsum_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/homeowner_plot2-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = housing2) +
+    geom_line(mapping = aes(x = date, y = price), 
+              color = &quot;red&quot;,
+              size = 0.7) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Percent&quot;,
+         title = &quot;Homeowner Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/homeowner_plot_dark-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = housing2) +
+    # y ==&gt; devide by 100
+      # scales::percent ==&gt; multiple things by 100
+    geom_line(mapping = aes(x = date, y = price/100), 
+              color = &quot;red&quot;,
+              size = 0.7) +
+    # scale_y_continuous(labels = percent) +
+    scale_y_continuous(labels = scales::percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Homeowner Vacancy Rate&quot;,
+         title = &quot;Homeowner Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/homeowner_plot_dark2-1.png" width="2100" /></p>
+</section>
+</section>
+<section id="rental-vacancy-rates" class="level3">
+<h3>Rental Vacancy Rates</h3>
+<p>The code for <strong>rental vacancy rates</strong> on FRED database is <code>&quot;RRVRUSQ156N&quot;</code>.</p>
+<pre class="r"><code>rental_vacancy_rate &lt;- tq_get(&quot;RRVRUSQ156N&quot;,
+                              get = &quot;economic.data&quot;,
+                              from = &quot;2001-01-01&quot;,
+                              to = &quot;2017-06-01&quot;)</code></pre>
+<pre class="r"><code>head(rental_vacancy_rate)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   date       price
+##   &lt;date&gt;     &lt;dbl&gt;
+## 1 2001-01-01  8.20
+## 2 2001-04-01  8.30
+## 3 2001-07-01  8.40
+## 4 2001-10-01  8.80
+## 5 2002-01-01  9.10
+## 6 2002-04-01  8.40</code></pre>
+<pre class="r"><code>tail(rental_vacancy_rate)</code></pre>
+<pre><code>## # A tibble: 6 x 2
+##   date       price
+##   &lt;date&gt;     &lt;dbl&gt;
+## 1 2016-01-01  7.00
+## 2 2016-04-01  6.70
+## 3 2016-07-01  6.80
+## 4 2016-10-01  6.90
+## 5 2017-01-01  7.00
+## 6 2017-04-01  7.30</code></pre>
+<pre class="r"><code>rental_vacancy_rate</code></pre>
+<pre><code>## # A tibble: 66 x 2
+##    date       price
+##    &lt;date&gt;     &lt;dbl&gt;
+##  1 2001-01-01  8.20
+##  2 2001-04-01  8.30
+##  3 2001-07-01  8.40
+##  4 2001-10-01  8.80
+##  5 2002-01-01  9.10
+##  6 2002-04-01  8.40
+##  7 2002-07-01  9.00
+##  8 2002-10-01  9.30
+##  9 2003-01-01  9.40
+## 10 2003-04-01  9.60
+## # ... with 56 more rows</code></pre>
+<pre class="r"><code>str(rental_vacancy_rate)</code></pre>
+<pre><code>## Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    66 obs. of  2 variables:
+##  $ date : Date, format: &quot;2001-01-01&quot; &quot;2001-04-01&quot; ...
+##  $ price: num  8.2 8.3 8.4 8.8 9.1 8.4 9 9.3 9.4 9.6 ...</code></pre>
+</section>
+<section id="plot" class="level3">
+<h3>Plot</h3>
+<pre class="r"><code>ggplot(data = rental_vacancy_rate) +
+    geom_line(mapping = aes(x = date, y = price), 
+              color = &quot;blue&quot;,
+              size = 0.6) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Percent&quot;,
+         title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_ipsum_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/rental_plot-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = rental_vacancy_rate) +
+     # y ==&gt; devide by 100
+        # scales::percent ==&gt; multiple things by 100
+     geom_line(mapping = aes(x = date, y = price/100), 
+              color = &quot;blue&quot;,
+              size = 0.6) +
+    # scale_y_continuous(labels = percent) +
+    scale_y_continuous(labels = scales::percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Rental Vacancy Rate&quot;,
+         title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_ipsum_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/rental_plot2-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = rental_vacancy_rate) +
+    geom_line(mapping = aes(x = date, y = price), 
+              color = &quot;red&quot;,
+              size = 0.7) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Percent&quot;,
+         title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/rental_plot_dark-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = rental_vacancy_rate) +
+    # y ==&gt; devide by 100
+      # scales::percent ==&gt; multiple things by 100
+    geom_line(mapping = aes(x = date, y = price/100), 
+              color = &quot;red&quot;,
+              size = 0.7) +
+    # scale_y_continuous(labels = percent) +
+    scale_y_continuous(labels = scales::percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Rental Vacancy Rate&quot;,
+         title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/rental_plot_dark2-1.png" width="2100" /></p>
+</section>
+<section id="all-data" class="level3">
+<h3>All Data</h3>
+<pre class="r"><code>vacancy_rate &lt;- tq_get(c(&quot;RHVRUSQ156N&quot;, &quot;RRVRUSQ156N&quot;),
+                       get = &quot;economic.data&quot;,
+                       from = &quot;2001-01-01&quot;,
+                       to = &quot;2017-06-01&quot;)</code></pre>
+<pre class="r"><code>str(vacancy_rate)</code></pre>
+<pre><code>## Classes &#39;tbl_df&#39;, &#39;tbl&#39; and &#39;data.frame&#39;:    132 obs. of  3 variables:
+##  $ symbol: chr  &quot;RHVRUSQ156N&quot; &quot;RHVRUSQ156N&quot; &quot;RHVRUSQ156N&quot; &quot;RHVRUSQ156N&quot; ...
+##  $ date  : Date, format: &quot;2001-01-01&quot; &quot;2001-04-01&quot; ...
+##  $ price : num  1.5 1.8 1.9 1.8 1.7 1.7 1.7 1.7 1.7 1.7 ...</code></pre>
+<pre class="r"><code>head(vacancy_rate)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   symbol      date       price
+##   &lt;chr&gt;       &lt;date&gt;     &lt;dbl&gt;
+## 1 RHVRUSQ156N 2001-01-01  1.50
+## 2 RHVRUSQ156N 2001-04-01  1.80
+## 3 RHVRUSQ156N 2001-07-01  1.90
+## 4 RHVRUSQ156N 2001-10-01  1.80
+## 5 RHVRUSQ156N 2002-01-01  1.70
+## 6 RHVRUSQ156N 2002-04-01  1.70</code></pre>
+<pre class="r"><code>tail(vacancy_rate)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+##   symbol      date       price
+##   &lt;chr&gt;       &lt;date&gt;     &lt;dbl&gt;
+## 1 RRVRUSQ156N 2016-01-01  7.00
+## 2 RRVRUSQ156N 2016-04-01  6.70
+## 3 RRVRUSQ156N 2016-07-01  6.80
+## 4 RRVRUSQ156N 2016-10-01  6.90
+## 5 RRVRUSQ156N 2017-01-01  7.00
+## 6 RRVRUSQ156N 2017-04-01  7.30</code></pre>
+<pre class="r"><code>vacancy_rate</code></pre>
+<pre><code>## # A tibble: 132 x 3
+##    symbol      date       price
+##    &lt;chr&gt;       &lt;date&gt;     &lt;dbl&gt;
+##  1 RHVRUSQ156N 2001-01-01  1.50
+##  2 RHVRUSQ156N 2001-04-01  1.80
+##  3 RHVRUSQ156N 2001-07-01  1.90
+##  4 RHVRUSQ156N 2001-10-01  1.80
+##  5 RHVRUSQ156N 2002-01-01  1.70
+##  6 RHVRUSQ156N 2002-04-01  1.70
+##  7 RHVRUSQ156N 2002-07-01  1.70
+##  8 RHVRUSQ156N 2002-10-01  1.70
+##  9 RHVRUSQ156N 2003-01-01  1.70
+## 10 RHVRUSQ156N 2003-04-01  1.70
+## # ... with 122 more rows</code></pre>
+</section>
+<section id="plot-1" class="level3">
+<h3>Plot</h3>
+<pre class="r"><code>ggplot(data = vacancy_rate) +
+    geom_line(mapping = aes(x = date, y = price),
+              color = &quot;blue&quot;,
+              size = 0.6) +
+    facet_wrap(~ symbol,
+               scales = &quot;free_y&quot;,
+               nrow = 2) +
+    # scale_y_continuous(labels = scales::percent) +
+    scale_y_continuous(labels = percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Vacancy Rates&quot;,
+         # title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_ipsum_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/all_data_plot-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = vacancy_rate) +
+    # y ==&gt; devide by 100
+      # scales::percent ==&gt; multiple things by 100
+    geom_line(mapping = aes(x = date, y = price/100),
+              color = &quot;blue&quot;,
+              size = 0.6) +
+    facet_wrap(~ symbol,
+               scales = &quot;free_y&quot;,
+               nrow = 2) +
+    # scale_y_continuous(labels = percent) +
+    scale_y_continuous(labels = scales::percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Vacancy Rates&quot;,
+         # title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_ipsum_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/all_data_plot2-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = vacancy_rate) +
+    geom_line(mapping = aes(x = date, y = price),
+              color = &quot;red&quot;,
+              size = 0.7) +
+    facet_wrap(~ symbol,
+               scales = &quot;free_y&quot;,
+               nrow = 2) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Percent&quot;,
+         # title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/all_data_plot_dark-1.png" width="2100" /></p>
+<pre class="r"><code>ggplot(data = vacancy_rate) +
+    # y ==&gt; devide by 100
+      # scales::percent ==&gt; multiple things by 100
+    geom_line(mapping = aes(x = date, y = price/100),
+              color = &quot;red&quot;,
+              size = 0.7) +
+    facet_wrap(~ symbol,
+               scales = &quot;free_y&quot;,
+               nrow = 2) +
+    scale_y_continuous(labels = scales::percent) +
+    # scale_y_continuous(labels = percent) +
+    # adjusting date break and showing ONLY years
+    scale_x_date(date_breaks = &quot;2 years&quot;,
+                 labels = date_format(&quot;%Y&quot;)) +
+    # rotate years on x axis to avoid overlapping
+    theme(axis.text.x = element_text(angle = 90, vjust = 1, hjust=1)) +
+    labs(x = &quot;Year&quot;,
+         y = &quot;Vacancy Rates&quot;,
+         # title = &quot;Rental Vacancy Rate (Quarterly)&quot;,
+         # caption = &quot;U.S. Census Bureau: Housing Vacancy Survey. Retrieved from Saint Louis Federal Reserve Bank FRED database using tidyquant package.&quot;) +
+         caption = &quot;U.S. Census Bureau: Housing Vacancy Survey (St. Louis Federal Reserve Bank: FRED).&quot;) +
+    theme_modern_rc(grid = &quot;XY&quot;)</code></pre>
+<p><img src="/post/2017-09-20-FRED_files/figure-html/all_data_plot_dark2-1.png" width="2100" /></p>
+</section>
+</section>
+<section id="quantmod-package" class="level2">
+<h2><code>quantmod</code> package</h2>
+</section>
+</section>
